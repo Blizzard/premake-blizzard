@@ -194,7 +194,7 @@ end
 
 function deploy0(cfg, context)
 	if not context.excluded and (context.prjCfg.kind == premake.CONSOLEAPP or context.prjCfg.kind == premake.WINDOWEDAPP) then
-		p.x('{%s}.%s.Deploy.0 = %s|%s', context.prj.uuid, context.descriptor, context.platform, context.architecture)
+		premake.x('{%s}.%s.Deploy.0 = %s|%s', context.prj.uuid, context.descriptor, context.platform, context.architecture)
 	end
 end
 
@@ -225,7 +225,7 @@ end)
 premake.override(vstudio.sln2005.elements, "projectConfigurationPlatforms", function(base, cfg, context)
 	local calls = base(cfg, context)
 	-- XB1 - Enable "Deploy" in the configuration manager for executable targets
-	if platform == "durango" then
+	if cfg.platform == "durango" then
 		table.insert(calls, deploy0)
 	end
 	return calls
