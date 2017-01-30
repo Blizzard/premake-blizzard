@@ -106,6 +106,7 @@ function cache.get_variants(name, version)
 				local n, variant = string.match(dir, '(.+)[\\|/](.+)')
 				result[variant] = 1
 			end
+			return result
 		end
 	end
 
