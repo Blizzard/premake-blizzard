@@ -179,6 +179,24 @@
 
 
 ---
+-- Manually create a package
+---
+	local function packageman_createpackage(wks, name)
+		local p = wks.package_cache[name]
+		if p then
+			error("Package '" .. name .. "' already exists in the solution.")
+		end
+
+		local variant = {}
+		local pkg = packageman_setup(name, nil, {noarch = variant})
+		wks.package_cache[name] = pkg
+
+		variant.package  = pkg
+		variant.location = _SCRIPT_DIR
+		return pkg
+	end
+
+---
 -- Import a set of packages.
 ---
 	function import(importTable)
@@ -226,6 +244,72 @@
 		-- restore current scope.
 		premake.api.scope.current = scope
 	end
+
+
+---
+-- Import a set of packages.
+---
+	function loadpackage(dir)
+		if not dir or not os.isdir(dir) then
+			error('invalid argument in loadpackage.')
+		end
+
+		if package.current then
+			error('Packages cannot load other packages, only the top-level project can do that')
+		end
+
+		-- make dir absolute.
+		dir = path.getabsolute(dir)
+
+		-- load the meta data file.
+		local env = {}
+		local filename = path.join(dir, 'premake5-meta.lua');
+		local untrusted_function, message = loadfile(filename, 't', env)
+		if not untrusted_function then 
+			error(message)
+		end
+
+		-- now execute it, so we can get the data.
+		local result, meta = pcall(untrusted_function)
+		if not result then
+			error(meta)
+		end
+
+		if not meta.name then
+			error('meta data table needs to at least specify a name.')
+		end
+
+		-- create package in existing package system.
+		local wks = premake.api.scope.workspace
+		local pkg = packageman_createpackage(wks, meta.name)
+		pkg.variants.noarch.includes = meta.includedirs
+		pkg.variants.noarch.links = meta.links
+		pkg.variants.noarch.location = dir
+
+		if meta.premake ~= nil then
+			local premakeFile = path.join(dir, meta.premake);
+
+			-- execute the premake5 file.
+			if os.isfile(premakeFile) then
+				-- store current package context.
+				local previous_package = package.current
+				package.current = pkg.variants.noarch
+
+				-- Store current scope.
+				local scope = premake.api.scope.current
+
+				-- execute premake script.
+				dofile(premakeFile)
+
+				-- restore current scope.
+				premake.api.scope.current = scope
+
+				-- restore package context.
+				package.current = previous_package
+			end
+		end
+	end
+
 
 ---
 -- Import lib filter for a set of packages.
@@ -422,25 +506,6 @@
 			error("Package was not imported; use 'import { ['" .. name .. "'] = 'version' }'.")
 		end
 		return p
-	end
-
-
----
--- Manually create a package
----
-	local function packageman_createpackage(wks, name)
-		local p = wks.package_cache[name]
-		if p then
-			error("Package '" .. name .. "' already exists in the solution.")
-		end
-
-		local variant = {}
-		local pkg = packageman_setup(name, nil, {noarch = variant})
-		wks.package_cache[name] = pkg
-
-		variant.package  = pkg
-		variant.location = _SCRIPT_DIR
-		return pkg
 	end
 
 
