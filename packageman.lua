@@ -161,23 +161,6 @@
 		return pkg
 	end
 
-
-	local function packageman_importpackage(name, version)
-		local available_variants = cache.get_variants(name, version)
-		if next(available_variants) == nil then
-			error('Package "' .. name .. ' - ' .. version .. '" has no variants. It might not exist.')
-		end
-
-		local pkg = packageman_setup(name, version, available_variants)
-
-		-- now load the noarch and/or universal variants.
-		pkg:loadvariant('noarch')
-		pkg:loadvariant('universal')
-
-		return pkg
-	end
-
-
 ---
 -- Manually create a package
 ---
@@ -196,6 +179,92 @@
 		return pkg
 	end
 
+
+---
+-- Load a single v2 package.
+---
+	local function packageman_loadpackage_v2(dir)
+		if not dir or not os.isdir(dir) then
+			error('invalid argument in loadpackage.')
+		end
+
+		if package.current then
+			error('Packages cannot load other packages, only the top-level project can do that')
+		end
+
+		-- make dir absolute.
+		dir = path.getabsolute(dir)
+
+		-- load the meta data file.
+		local env = {}
+		local filename = path.join(dir, 'premake5-meta.lua');
+		if not os.isfile(filename) then
+			error('Package in folder "' .. dir .. '" does not have a premake5-meta.lua script.')
+		end
+		local untrusted_function, message = loadfile(filename, 't', env)
+		if not untrusted_function then
+			error(message)
+		end
+
+		-- now execute it, so we can get the data.
+		local result, meta = pcall(untrusted_function)
+		if not result then
+			error(meta)
+		end
+
+		if not meta.name then
+			error('meta data table needs to at least specify a name.')
+		end
+
+		-- create package in existing package system.
+		local wks = premake.api.scope.workspace
+		local pkg = packageman_createpackage(wks, meta.name)
+		pkg.variants.noarch.includes = meta.includedirs
+		pkg.variants.noarch.links    = meta.links
+		pkg.variants.noarch.defines  = meta.defines
+		pkg.variants.noarch.location = dir
+		pkg.variants.noarch.script   = filename
+
+		if meta.premake ~= nil then
+			pkg.variants.noarch.initializer = function()
+				dofile(meta.premake)
+			end
+		end
+
+		return pkg
+	end
+
+
+---
+-- Import a single package.
+---
+	local function packageman_importpackage(name, version)
+		-- first see if this is a version 2.0 package.
+		local pkgv2_dir = cache.get_package_v2_folder(name, version)
+		if (pkgv2_dir ~= nil) then
+			local pkg = packageman_loadpackage_v2(pkgv2_dir)
+			if (pkg.name ~= name) then
+				error('Package "' .. name .. ' - ' .. version .. '" name does not match the name specified in the premake5-meta.lua script.')
+			end
+			return pkg
+		end
+
+		-- else try a version 1 package.
+		local available_variants = cache.get_variants(name, version)
+		if next(available_variants) == nil then
+			error('Package "' .. name .. ' - ' .. version .. '" has no variants. It might not exist.')
+		end
+
+		local pkg = packageman_setup(name, version, available_variants)
+
+		-- now load the noarch and/or universal variants.
+		pkg:loadvariant('noarch')
+		pkg:loadvariant('universal')
+
+		return pkg
+	end
+
+
 ---
 -- Import a set of packages.
 ---
@@ -205,7 +274,7 @@
 		end
 
 		if package.current then
-			error('Packages cannot import other package, only the top-level project can do that')
+			error('Packages cannot import other package, only the top-level workspace can do that')
 		end
 
 		-- we always need to have a workspace.
@@ -247,69 +316,13 @@
 
 
 ---
--- Import a set of packages.
+-- Load & Import a v2 package.
 ---
 	function loadpackage(dir)
-		if not dir or not os.isdir(dir) then
-			error('invalid argument in loadpackage.')
-		end
-
-		if package.current then
-			error('Packages cannot load other packages, only the top-level project can do that')
-		end
-
-		-- make dir absolute.
-		dir = path.getabsolute(dir)
-
-		-- load the meta data file.
-		local env = {}
-		local filename = path.join(dir, 'premake5-meta.lua');
-		local untrusted_function, message = loadfile(filename, 't', env)
-		if not untrusted_function then 
-			error(message)
-		end
-
-		-- now execute it, so we can get the data.
-		local result, meta = pcall(untrusted_function)
-		if not result then
-			error(meta)
-		end
-
-		if not meta.name then
-			error('meta data table needs to at least specify a name.')
-		end
-
-		-- create package in existing package system.
-		local wks = premake.api.scope.workspace
-		local pkg = packageman_createpackage(wks, meta.name)
-		pkg.variants.noarch.includes = meta.includedirs
-		pkg.variants.noarch.links = meta.links
-		pkg.variants.noarch.location = dir
-
-		if meta.premake ~= nil then
-			local premakeFile = path.join(dir, meta.premake);
-
-			-- execute the premake5 file.
-			if os.isfile(premakeFile) then
-				-- store current package context.
-				local previous_package = package.current
-				package.current = pkg.variants.noarch
-
-				-- Store current scope.
-				local scope = premake.api.scope.current
-
-				-- execute premake script.
-				dofile(premakeFile)
-
-				-- restore current scope.
-				premake.api.scope.current = scope
-
-				-- restore package context.
-				package.current = previous_package
-			end
-		end
+		local pkg = packageman_loadpackage_v2(dir)
+		pkg:initialize()
+		return pkg
 	end
-
 
 ---
 -- Import lib filter for a set of packages.

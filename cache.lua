@@ -83,7 +83,7 @@ function escape_url_param(param)
 end
 
 
-function _package_location(...)
+local function _package_location(...)
 	local location = path.join(...)
 
 	location = path.normalize(location)
@@ -93,6 +93,91 @@ function _package_location(...)
 	return location
 end
 
+
+local function _get_user()
+	if os.is('windows') then
+		return os.getenv('USERNAME') or 'UNKNOWN'
+	else
+		return os.getenv('LOGNAME') or 'UNKNOWN'
+	end
+end
+
+
+local function _get_workspace()
+	if premake.api and premake.api.scope and premake.api.scope.workspace then
+		return premake.api.scope.workspace.name
+	end
+	return 'unknown'
+end
+
+
+function cache.get_package_v2_folder(name, version)
+	-- test if we have the package locally.
+	for i, folder in ipairs(cache.folders) do
+		local location = _package_location(folder, name, version)
+		local filename = path.join(location, 'premake5-meta.lua')
+		if os.isfile(filename) then
+			verbosef(' LOCAL: %s', location)
+			return location
+		end
+	end
+
+	-- test if we downloaded it already.
+	local location = _package_location(cache.location_override, name, version)
+	local filename = path.join(location, 'premake5-meta.lua')
+	if os.isfile(filename) then
+		verbosef(' CACHED: %s', location)
+		return location
+	end
+
+	-- if we don't want server queries, we stop here.
+	if (_OPTIONS['no-http']) then
+		return nil
+	end
+
+	-- ask if the server has it.
+	local link_url = cache.package_hostname .. '/api/v2/link?name=' .. escape_url_param(name) .. '&version=' .. escape_url_param(version)
+	local content, result_str, result_code = http.get(cache.package_hostname .. '/' .. link_url)
+	if not content then
+		return nil
+	end
+
+	local info_tbl = JSON:decode(content)
+	if not info_tbl.url then
+		return nil
+	end
+
+	if info_tbl.state:lower() ~= 'active' then
+		premake.warn('"%s/%s" is marked "%s", consider upgrading to a known good version.', name, version, info_tbl.state)
+	end
+
+	-- create destination folder.
+	os.mkdir(location)
+
+	-- download to packagecache/name-version.zip.
+	local destination = _package_location(cache.location_override, name .. '-' .. version .. '.zip')
+
+	print(' DOWNLOAD: ' .. info_tbl.url)
+	local result_str, response_code = http.download(info_tbl.url, destination,
+	{
+		headers  = {
+			'X-Premake-User: '      .. _get_user(),
+			'X-Premake-Workspace: ' .. _get_workspace()
+		},
+		progress = iif(_OPTIONS.verbose, _http_progress, nil)
+	})
+
+	if result_str ~= "OK" then
+		premake.error('Download of %s failed (%d)\n%s', info_tbl.url, response_code, result_str)
+	end
+
+	-- Unzip it
+	verbosef(' UNZIP   : %s', destination)
+	zip.extract(destination, location)
+	os.remove(destination)
+
+	return location
+end
 
 
 function cache.get_variants(name, version)
@@ -205,24 +290,9 @@ function cache.download(name, version, variant)
 			file_url = info_tbl.url
 		end
 
-		if info_tbl.state == 'Broken' then
-			premake.warn('"%s/%s" is marked BROKEN, consider upgrading to a known good version.', name, version)
-		elseif info_tbl.state == 'Deprecated' then
-			premake.warn('"%s/%s" is marked DEPRECATED, consider upgrading to a known good version.', name, version)
+		if info_tbl.state:lower() ~= 'active' then
+			premake.warn('"%s/%s" is marked "%s", consider upgrading to a known good version.', name, version, info_tbl.state)
 		end
-	end
-
-	-- get solutionname and username.
-	local solution_name = 'unknown'
-	if premake.api and premake.api.scope and premake.api.scope.solution then
-		solution_name = premake.api.scope.solution.name
-	end
-
-	local user = 'UNKNOWN'
-	if os.get() == 'windows' then
-		user = os.getenv('USERNAME') or user
-	else
-		user = os.getenv('LOGNAME') or user
 	end
 
 	-- Download file.
@@ -230,8 +300,11 @@ function cache.download(name, version, variant)
 	os.mkdir(path.getdirectory(destination))
 	local result_str, response_code = http.download(file_url, destination,
 	{
-		headers  = {'From: ' .. user, 'Referer: ' .. solution_name},
-		progress = _http_progress
+		headers  = {
+			'X-Premake-User: '      .. _get_user(),
+			'X-Premake-Workspace: ' .. _get_workspace()
+		},
+		progress = iif(_OPTIONS.verbose, _http_progress, nil)
 	})
 
 	if result_str ~= "OK" then
