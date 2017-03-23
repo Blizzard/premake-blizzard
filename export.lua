@@ -85,25 +85,6 @@ function exportsettings(name)
 end
 
 
-local function spairs(t)
-	-- collect the keys
-	local keys = {}
-	for k in pairs(t) do
-		table.insert(keys, k)
-	end
-	table.sort(keys)
-
-	-- return the iterator function
-	local i = 0
-	return function()
-		i = i + 1
-		if keys[i] then
-			return keys[i], t[keys[i]]
-		end
-	end
-end
-
-
 local function copyBlock(block)
 	local clone = {}
 	for k, v in pairs(block) do

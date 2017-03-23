@@ -239,6 +239,19 @@
 -- Import a single package.
 ---
 	local function packageman_importpackage(name, version)
+		-- create the --use-<name> option.
+		local optionname = 'use-' .. name
+		premake.option.add({
+			trigger     = optionname,
+			value       = '<path>',
+			default     = version,
+			description = 'Path to ' .. name .. ' package.',
+			category    = 'Packages'
+		})
+
+		-- option overrides version from table.
+		version = _OPTIONS[optionname] or version
+
 		-- first see if this is a version 2.0 package.
 		local pkgv2_dir = cache.get_package_v2_folder(name, version)
 		if (pkgv2_dir ~= nil) then

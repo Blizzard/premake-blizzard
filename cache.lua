@@ -112,6 +112,15 @@ end
 
 
 function cache.get_package_v2_folder(name, version)
+	-- test if version is a folder name.
+	if os.isdir(version) then
+		local filename = path.join(version, 'premake5-meta.lua')
+		if os.isfile(filename) then
+			verbosef(' LOCAL: %s', version)
+			return version
+		end
+	end
+
 	-- test if we have the package locally.
 	for i, folder in ipairs(cache.folders) do
 		local location = _package_location(folder, name, version)
@@ -182,6 +191,15 @@ end
 
 function cache.get_variants(name, version)
 	local result = {}
+
+	-- test if version is a folder name.
+	if os.isdir(version) then
+		for i, dir in pairs(os.matchdirs(version .. '/*')) do
+			local n, variant = string.match(dir, '(.+)[\\|/](.+)')
+			result[variant] = 1
+		end
+		return result
+	end
 
 	-- test if we have the package locally.
 	for i, folder in ipairs(cache.folders) do
