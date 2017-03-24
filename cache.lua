@@ -42,47 +42,6 @@ function cache.get_folder()
 end
 
 
-function escape_url_param(param)
-	local url_encodings =
-	{
-		[' '] = '%%20',
-		['!'] = '%%21',
-		['"'] = '%%22',
-		['#'] = '%%23',
-		['$'] = '%%24',
-		['&'] = '%%26',
-		['\''] = '%%27',
-		['('] = '%%28',
-		[')'] = '%%29',
-		['*'] = '%%2A',
-		['+'] = '%%2B',
-		['-'] = '%%2D',
-		['.'] = '%%2E',
-		['/'] = '%%2F',
-		[':'] = '%%3A',
-		[';'] = '%%3B',
-		['<'] = '%%3C',
-		['='] = '%%3D',
-		['>'] = '%%3E',
-		['?'] = '%%3F',
-		['@'] = '%%40',
-		['['] = '%%5B',
-		['\\'] = '%%5C',
-		[']'] = '%%5D',
-		['^'] = '%%5E',
-		['_'] = '%%5F',
-		['`'] = '%%60'
-	}
-
-	param = param:gsub('%%', '%%25')
-	for k,v in pairs(url_encodings) do
-		param = param:gsub('%' .. k, v)
-	end
-
-	return param
-end
-
-
 local function _package_location(...)
 	local location = path.join(...)
 
@@ -145,7 +104,7 @@ function cache.get_package_v2_folder(name, version)
 	end
 
 	-- ask if the server has it.
-	local link_url = cache.package_hostname .. '/api/v2/link?name=' .. escape_url_param(name) .. '&version=' .. escape_url_param(version)
+	local link_url = cache.package_hostname .. '/api/v1/link?name=' .. http.escapeUrlParam(name) .. '&version=' .. http.escapeUrlParam(version)
 	local content, result_str, result_code = http.get(cache.package_hostname .. '/' .. link_url)
 	if not content then
 		return nil
@@ -173,7 +132,7 @@ function cache.get_package_v2_folder(name, version)
 			'X-Premake-User: '      .. _get_user(),
 			'X-Premake-Workspace: ' .. _get_workspace()
 		},
-		progress = iif(_OPTIONS.verbose, _http_progress, nil)
+		progress = iif(_OPTIONS.verbose, http.reportProgress, nil)
 	})
 
 	if result_str ~= "OK" then
@@ -219,7 +178,7 @@ function cache.get_variants(name, version)
 	end
 
 	-- Query the server for variant information.
-	local file = 'archives?name=' .. escape_url_param(name) .. '&version=' .. escape_url_param(version)
+	local file = 'archives?name=' .. http.escapeUrlParam(name) .. '&version=' .. http.escapeUrlParam(version)
 
 	local content, result_str, result_code = http.get(cache.package_hostname .. '/' .. file)
 	if content then
@@ -248,7 +207,7 @@ function cache.aliases(name)
 	end
 
 	-- querie server for alias information.
-	local link = 'aliases?name=' .. escape_url_param(name)
+	local link = 'aliases?name=' .. http.escapeUrlParam(name)
 	local content, result_str, result_code = http.get(cache.package_hostname .. '/' .. link)
 	if content then
 		local alias_tbl = JSON:decode(content)
@@ -261,18 +220,6 @@ function cache.aliases(name)
 			realname = name,
 			aliases  = {}
 		}
-	end
-end
-
-
-local function _http_progress(total, current)
-	local width = 78
-	local progress = math.floor(current * width / total)
-
-	if progress == width then
-		io.write(string.rep(' ', width + 2) .. '\r')
-	else
-		io.write('[' .. string.rep('=', progress) .. string.rep(' ', width - progress) .. ']\r')
 	end
 end
 
@@ -296,11 +243,11 @@ function cache.download(name, version, variant)
 
 	-- calculate standard file_url.
 	local destination = location .. '.zip'
-	local file        = escape_url_param(name) .. '/' .. escape_url_param(version) .. '/' .. escape_url_param(variant) .. '.zip'
+	local file        = http.escapeUrlParam(name) .. '/' .. http.escapeUrlParam(version) .. '/' .. http.escapeUrlParam(variant) .. '.zip'
 	local file_url    = cache.package_hostname .. '/' .. file
 
 	-- get link information from server.
-	local link_url = 'link?name=' .. escape_url_param(name) .. '&version=' .. escape_url_param(version) .. '&variant=' .. escape_url_param(variant)
+	local link_url = 'link?name=' .. http.escapeUrlParam(name) .. '&version=' .. http.escapeUrlParam(version) .. '&variant=' .. http.escapeUrlParam(variant)
 	local content, result_str, result_code = http.get(cache.package_hostname .. '/' .. link_url)
 	if content then
 		local info_tbl = JSON:decode(content)
@@ -322,7 +269,7 @@ function cache.download(name, version, variant)
 			'X-Premake-User: '      .. _get_user(),
 			'X-Premake-Workspace: ' .. _get_workspace()
 		},
-		progress = iif(_OPTIONS.verbose, _http_progress, nil)
+		progress = iif(_OPTIONS.verbose, http.reportProgress, nil)
 	})
 
 	if result_str ~= "OK" then

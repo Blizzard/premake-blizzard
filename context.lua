@@ -50,7 +50,7 @@ end)
 --
 -- 		local duration = (os.clock() - _PREMAKE_STARTTIME) * 1000;
 --
--- 		local file = "spy?app=premake&version=" .. escape_url_param(_PREMAKE_VERSION)
+-- 		local file = "spy?app=premake&version=" .. http.escapeUrlParam(_PREMAKE_VERSION)
 -- 		http.get('http://***REMOVED***/' .. file,
 -- 		{
 -- 			headers = {
