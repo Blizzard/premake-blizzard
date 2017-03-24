@@ -38,31 +38,3 @@ premake.override(premake.context, "new", function (base, cfgset, environ)
 	return ctx
 end)
 
--- spyware...
--- premake.override(premake.main, "postAction", function (base)
--- 	if http and not _OPTIONS['no-http'] then
--- 		local user = "UNKNOWN"
--- 		if os.get() == "windows" then
--- 			user = os.getenv("USERNAME") or user
--- 		else
--- 			user = os.getenv("LOGNAME") or user
--- 		end
---
--- 		local duration = (os.clock() - _PREMAKE_STARTTIME) * 1000;
---
--- 		local file = "spy?app=premake&version=" .. http.escapeUrlParam(_PREMAKE_VERSION)
--- 		http.get('http://***REMOVED***/' .. file,
--- 		{
--- 			headers = {
--- 				"X-Premake-User: "     .. user,
--- 				"X-Premake-Platform: " .. _OS,
--- 				"X-Premake-WorkDir: "  .. _WORKING_DIR,
--- 				"X-Premake-Time: "     .. duration,
--- 				"X-Premake-CmdLine: "  .. table.concat(_ARGV, ' '),
--- 			}
--- 		})
--- 	end
---
--- 	base()
--- end)
-

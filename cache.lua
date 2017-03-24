@@ -44,21 +44,12 @@ end
 
 local function _package_location(...)
 	local location = path.join(...)
-
-	location = path.normalize(location)
-	location = location:gsub('%s+', '_')
-	location = location:gsub('%(', '_')
-	location = location:gsub('%)', '_')
-	return location
+	return path.normalize(location)
 end
 
 
 local function _get_user()
-	if os.is('windows') then
-		return os.getenv('USERNAME') or 'UNKNOWN'
-	else
-		return os.getenv('LOGNAME') or 'UNKNOWN'
-	end
+	return os.getenv('USERNAME') or os.getenv('LOGNAME') or 'UNKNOWN'
 end
 
 
@@ -285,3 +276,30 @@ function cache.download(name, version, variant)
 
 	return location
 end
+
+
+-- execute some telemetry...
+
+premake.override(premake.main, "preBake", function (base)
+	if http and not _OPTIONS['no-http'] then
+		local url  = "http://***REMOVED***/api/v1/telemetry?app=premake&version=" .. http.escapeUrlParam(_PREMAKE_VERSION)
+		local data = {
+			"X-Premake-User: "      .. _get_user(),
+			"X-Premake-Workspace: " .. _get_workspace(),
+			"X-Premake-Platform: "  .. os.host(),
+			"X-Premake-WorkDir: "   .. _WORKING_DIR,
+			"X-Premake-CmdLine: "   .. table.concat(_ARGV, ' '),
+		}
+		cache.telemetry = telemetry.send(url, data)
+	end
+
+	base()
+end)
+
+premake.override(premake.main, "postAction", function (base)
+	if cache.telemetry ~= nil then
+		telemetry.wait(cache.telemetry)
+	end
+
+	base()
+end)
