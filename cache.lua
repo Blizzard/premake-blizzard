@@ -156,7 +156,7 @@ function cache.get_package_v2_folder(name, version)
 		return nil
 	end
 
-	if info_tbl.state:lower() ~= 'active' then
+	if type(info_tbl.state) == "string" and info_tbl.state:lower() ~= 'active' then
 		premake.warn('"%s/%s" is marked "%s", consider upgrading to a known good version.', name, version, info_tbl.state)
 	end
 
@@ -308,7 +308,7 @@ function cache.download(name, version, variant)
 			file_url = info_tbl.url
 		end
 
-		if info_tbl.state ~= nil and info_tbl.state:lower() ~= 'active' then
+		if type(info_tbl.state) == "string" and info_tbl.state:lower() ~= 'active' then
 			premake.warn('"%s/%s" is marked "%s", consider upgrading to a known good version.', name, version, info_tbl.state)
 		end
 	end
