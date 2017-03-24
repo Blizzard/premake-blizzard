@@ -4,6 +4,7 @@
 ---
 
 	packageman = {}
+	packageman._loaded = { }
 
 	local project = premake.project
 	local import_filter = {}
@@ -183,7 +184,7 @@
 ---
 -- Load a single v2 package.
 ---
-	local function packageman_loadpackage_v2(dir)
+	local function packageman_loadpackage_v2(name, dir)
 		if not dir or not os.isdir(dir) then
 			error('invalid argument in loadpackage.')
 		end
@@ -212,23 +213,19 @@
 			error(meta)
 		end
 
-		if not meta.name then
-			error('meta data table needs to at least specify a name.')
-		end
 		-- create package in existing package system.
 		local wks = premake.api.scope.workspace
-		local pkg = packageman_createpackage(wks, meta.name)
+		local pkg = packageman_createpackage(wks, name)
 		pkg.variants.noarch.includes = meta.includedirs
 		pkg.variants.noarch.links    = meta.links
 		pkg.variants.noarch.defines  = meta.defines
 		pkg.variants.noarch.location = dir
 		pkg.variants.noarch.script   = filename
-		packageman._loaded = packageman._loaded or { }
 
 		if meta.premake ~= nil then
 			pkg.variants.noarch.initializer = function()
-				if not packageman._loaded[dir] then
-					packageman._loaded[dir] = true
+				if not packageman._loaded[name] then
+					packageman._loaded[name] = true
 				else
 					premake.api._isIncludingExternal = true
 				end
@@ -261,11 +258,7 @@
 		-- first see if this is a version 2.0 package.
 		local pkgv2_dir = cache.get_package_v2_folder(name, version)
 		if (pkgv2_dir ~= nil) then
-			local pkg = packageman_loadpackage_v2(pkgv2_dir)
-			if (pkg.name ~= name) then
-				error('Package "' .. name .. ' - ' .. version .. '" name does not match the name specified in the premake5-meta.lua script.')
-			end
-			return pkg
+			return packageman_loadpackage_v2(name, pkgv2_dir)
 		end
 
 		-- else try a version 1 package.
@@ -333,15 +326,6 @@
 		premake.api.scope.current = scope
 	end
 
-
----
--- Load & Import a v2 package.
----
-	function loadpackage(dir)
-		local pkg = packageman_loadpackage_v2(dir)
-		pkg:initialize()
-		return pkg
-	end
 
 ---
 -- Import lib filter for a set of packages.
