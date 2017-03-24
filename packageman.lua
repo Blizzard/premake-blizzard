@@ -215,7 +215,6 @@
 		if not meta.name then
 			error('meta data table needs to at least specify a name.')
 		end
-
 		-- create package in existing package system.
 		local wks = premake.api.scope.workspace
 		local pkg = packageman_createpackage(wks, meta.name)
@@ -224,10 +223,17 @@
 		pkg.variants.noarch.defines  = meta.defines
 		pkg.variants.noarch.location = dir
 		pkg.variants.noarch.script   = filename
+		packageman._loaded = packageman._loaded or { }
 
 		if meta.premake ~= nil then
 			pkg.variants.noarch.initializer = function()
+				if not packageman._loaded[dir] then
+					packageman._loaded[dir] = true
+				else
+					premake.api._isIncludingExternal = true
+				end
 				dofile(meta.premake)
+				premake.api._isIncludingExternal = nil
 			end
 		end
 
