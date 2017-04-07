@@ -526,6 +526,19 @@
 
 
 ---
+-- See if a previously imported package was imported.
+---
+	function package.isimported(name)
+		if not premake.api.scope.workspace then
+			error("No workspace in scope.", 3)
+		end
+		local wks = premake.api.scope.workspace
+		local p = wks.package_cache[name]
+		return (p ~= nil)
+	end
+
+
+---
 -- override 'workspace' so that we can initialize a package cache.
 ---
 	premake.override(premake.workspace, 'new', function(base, name)
@@ -533,6 +546,7 @@
 		wks.package_cache = wks.package_cache or {}
 		return wks
 	end)
+
 
 ---
 -- override 'project' so that when a package defines a new project we initialize it with some default values.
