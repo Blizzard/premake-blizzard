@@ -104,8 +104,8 @@ function cache.get_package_v2_folder(name, version)
 	end
 
 	-- ask if the server has it.
-	local link_url = cache.package_hostname .. '/api/v1/link?name=' .. http.escapeUrlParam(name) .. '&version=' .. http.escapeUrlParam(version)
-	local content, result_str, result_code = http.get(cache.package_hostname .. '/' .. link_url)
+	local link_url = '/api/v1/link?name=' .. http.escapeUrlParam(name) .. '&version=' .. http.escapeUrlParam(version)
+	local content, result_str, result_code = http.get(cache.package_hostname .. link_url)
 	if not content then
 		return nil
 	end
@@ -178,9 +178,9 @@ function cache.get_variants(name, version)
 	end
 
 	-- Query the server for variant information.
-	local file = 'archives?name=' .. http.escapeUrlParam(name) .. '&version=' .. http.escapeUrlParam(version)
+	local file = '/archives?name=' .. http.escapeUrlParam(name) .. '&version=' .. http.escapeUrlParam(version)
 
-	local content, result_str, result_code = http.get(cache.package_hostname .. '/' .. file)
+	local content, result_str, result_code = http.get(cache.package_hostname .. file)
 	if content then
 		-- load content as json object.
 		local variant_tbl = JSON:decode(content)
@@ -207,8 +207,8 @@ function cache.aliases(name)
 	end
 
 	-- querie server for alias information.
-	local link = 'aliases?name=' .. http.escapeUrlParam(name)
-	local content, result_str, result_code = http.get(cache.package_hostname .. '/' .. link)
+	local link = '/aliases?name=' .. http.escapeUrlParam(name)
+	local content, result_str, result_code = http.get(cache.package_hostname .. link)
 	if content then
 		local alias_tbl = JSON:decode(content)
 		return {
@@ -247,8 +247,8 @@ function cache.download(name, version, variant)
 	local file_url    = cache.package_hostname .. '/' .. file
 
 	-- get link information from server.
-	local link_url = 'link?name=' .. http.escapeUrlParam(name) .. '&version=' .. http.escapeUrlParam(version) .. '&variant=' .. http.escapeUrlParam(variant)
-	local content, result_str, result_code = http.get(cache.package_hostname .. '/' .. link_url)
+	local link_url = '/link?name=' .. http.escapeUrlParam(name) .. '&version=' .. http.escapeUrlParam(version) .. '&variant=' .. http.escapeUrlParam(variant)
+	local content, result_str, result_code = http.get(cache.package_hostname .. link_url)
 	if content then
 		local info_tbl = JSON:decode(content)
 		if info_tbl.url then
