@@ -91,7 +91,7 @@ function cache.get_package_v2_folder(name, version)
 	end
 
 	-- test if we downloaded it already.
-	local location = _package_location(cache.location_override, name, version)
+	local location = _package_location(cache.get_folder(), name, version)
 	local filename = path.join(location, 'premake5-meta.lua')
 	if os.isfile(filename) then
 		verbosef(' CACHED: %s', location)
@@ -104,7 +104,7 @@ function cache.get_package_v2_folder(name, version)
 	end
 
 	-- ask if the server has it.
-	local link_url = '/api/v1/link?name=' .. http.escapeUrlParam(name) .. '&version=' .. http.escapeUrlParam(version)
+	local link_url = '/api/v1/link/' .. http.escapeUrlParam(name) .. '/' .. http.escapeUrlParam(version)
 	local content, result_str, result_code = http.get(cache.package_hostname .. link_url)
 	if not content then
 		return nil
@@ -123,12 +123,13 @@ function cache.get_package_v2_folder(name, version)
 	os.mkdir(location)
 
 	-- download to packagecache/name-version.zip.
-	local destination = _package_location(cache.location_override, name .. '-' .. version .. '.zip')
+	local destination = _package_location(cache.get_folder(), name .. '-' .. version .. '.zip')
 
 	print(' DOWNLOAD: ' .. info_tbl.url)
 	local result_str, response_code = http.download(info_tbl.url, destination,
 	{
 		headers  = {
+			'X-Premake-Version: '   .. _PREMAKE_VERSION,
 			'X-Premake-User: '      .. _get_user(),
 			'X-Premake-Workspace: ' .. _get_workspace()
 		},
@@ -266,6 +267,7 @@ function cache.download(name, version, variant)
 	local result_str, response_code = http.download(file_url, destination,
 	{
 		headers  = {
+			'X-Premake-Version: '   .. _PREMAKE_VERSION,
 			'X-Premake-User: '      .. _get_user(),
 			'X-Premake-Workspace: ' .. _get_workspace()
 		},
