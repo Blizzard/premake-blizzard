@@ -92,13 +92,14 @@ end
 -- load a specific variant if not already loaded.
 ---
 function package:loadvariant(variant)
-	if self.variants[variant] == 1 then
-		local directory = cache.download(self.name, self.version, variant)
+	local v = self.variants[variant]
+	if v and not v.loaded then
+		local directory = cache.download(v.server, self.name, self.version, variant)
 
-		local v = {
-			package  = self,
-			location = directory
-		}
+		-- register package as loaded
+		v.loaded   = true
+		v.package  = self
+		v.location = directory
 
 		-- does it contain an include directory?
 		local directory_include = path.join(directory, 'include')

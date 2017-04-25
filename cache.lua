@@ -4,9 +4,13 @@
 ---
 
 cache = {}
-cache.package_hostname = '***REMOVED***'
-cache.folders  = { '.' }
+cache.folders           = { '.' }
 cache.location_override = nil
+cache.package_hostname  = nil
+cache.package_servers   = {
+	'http://***REMOVED***',
+	'http://***REMOVED***'
+}
 
 local JSON = assert(loadfile 'json.lua')()
 
@@ -25,6 +29,14 @@ function cache.use_env_var_location()
 	end
 
 	return false
+end
+
+
+function cache.get_servers()
+	if cache.package_hostname then
+		return { cache.package_hostname }
+	end
+	return cache.package_servers
 end
 
 
@@ -94,49 +106,49 @@ function cache.get_package_v2_folder(name, version)
 		return nil
 	end
 
-	-- ask if the server has it.
-	local link_url = '/api/v1/link/' .. http.escapeUrlParam(name) .. '/' .. http.escapeUrlParam(version)
-	local content, result_str, result_code = http.get(cache.package_hostname .. link_url)
-	if not content then
-		return nil
+	-- ask if any of the servers has it? First hit gets it.
+	for _, hostname in ipairs(cache.get_servers()) do
+		local link_url = '/api/v1/link/' .. http.escapeUrlParam(name) .. '/' .. http.escapeUrlParam(version)
+		local content, result_str, result_code = http.get(hostname .. link_url)
+		if content then
+			local info_tbl = JSON:decode(content)
+			if info_tbl.url then
+
+				if type(info_tbl.state) == "string" and info_tbl.state:lower() ~= 'active' then
+					premake.warn('"%s/%s" is marked "%s", consider upgrading to a known good version.', name, version, info_tbl.state)
+				end
+
+				-- create destination folder.
+				os.mkdir(location)
+
+				-- download to packagecache/name-version.zip.
+				local destination = _package_location(cache.get_folder(), name .. '-' .. version .. '.zip')
+
+				print(' DOWNLOAD: ' .. info_tbl.url)
+				local result_str, response_code = http.download(info_tbl.url, destination,
+				{
+					headers  = {
+						'X-Premake-Version: '   .. _PREMAKE_VERSION,
+						'X-Premake-User: '      .. _get_user(),
+						'X-Premake-Workspace: ' .. _get_workspace()
+					},
+					progress = iif(_OPTIONS.verbose, http.reportProgress, nil)
+				})
+
+				if result_str ~= "OK" then
+					premake.error('Download of %s failed (%d)\n%s', info_tbl.url, response_code, result_str)
+				end
+
+				-- Unzip it
+				verbosef(' UNZIP   : %s', destination)
+				zip.extract(destination, location)
+				os.remove(destination)
+				return location
+			end
+		end
 	end
 
-	local info_tbl = JSON:decode(content)
-	if not info_tbl.url then
-		return nil
-	end
-
-	if type(info_tbl.state) == "string" and info_tbl.state:lower() ~= 'active' then
-		premake.warn('"%s/%s" is marked "%s", consider upgrading to a known good version.', name, version, info_tbl.state)
-	end
-
-	-- create destination folder.
-	os.mkdir(location)
-
-	-- download to packagecache/name-version.zip.
-	local destination = _package_location(cache.get_folder(), name .. '-' .. version .. '.zip')
-
-	print(' DOWNLOAD: ' .. info_tbl.url)
-	local result_str, response_code = http.download(info_tbl.url, destination,
-	{
-		headers  = {
-			'X-Premake-Version: '   .. _PREMAKE_VERSION,
-			'X-Premake-User: '      .. _get_user(),
-			'X-Premake-Workspace: ' .. _get_workspace()
-		},
-		progress = iif(_OPTIONS.verbose, http.reportProgress, nil)
-	})
-
-	if result_str ~= "OK" then
-		premake.error('Download of %s failed (%d)\n%s', info_tbl.url, response_code, result_str)
-	end
-
-	-- Unzip it
-	verbosef(' UNZIP   : %s', destination)
-	zip.extract(destination, location)
-	os.remove(destination)
-
-	return location
+	return nil
 end
 
 
@@ -147,7 +159,9 @@ function cache.get_variants(name, version)
 	if os.isdir(version) then
 		for i, dir in pairs(os.matchdirs(version .. '/*')) do
 			local n, variant = string.match(dir, '(.+)[\\|/](.+)')
-			result[variant] = 1
+			result[variant] = {
+				location = dir
+			}
 		end
 		return result
 	end
@@ -158,7 +172,9 @@ function cache.get_variants(name, version)
 		if os.isdir(location) then
 			for i, dir in pairs(os.matchdirs(location .. '/*')) do
 				local n, variant = string.match(dir, '(.+)[\\|/](.+)')
-				result[variant] = 1
+				result[variant] = {
+					location = dir
+				}
 			end
 			return result
 		end
@@ -170,22 +186,26 @@ function cache.get_variants(name, version)
 	end
 
 	-- Query the server for variant information.
-	local file = '/archives?name=' .. http.escapeUrlParam(name) .. '&version=' .. http.escapeUrlParam(version)
+	for _, hostname in ipairs(cache.get_servers()) do
+		local file = '/archives?name=' .. http.escapeUrlParam(name) .. '&version=' .. http.escapeUrlParam(version)
 
-	local content, result_str, result_code = http.get(cache.package_hostname .. file)
-	if content then
-		-- load content as json object.
-		local variant_tbl = JSON:decode(content)
+		local content, result_str, result_code = http.get(hostname .. file)
+		if content then
+			-- load content as json object.
+			local variant_tbl = JSON:decode(content)
 
-		for i, variant in pairs(variant_tbl) do
-			variant = path.getbasename(variant)
-			if (result[variant] ~= 1) then
-				verbosef('Adding variant: ' .. variant)
-				result[variant] = 1
+			for i, variant in pairs(variant_tbl) do
+				variant = path.getbasename(variant)
+				if not result[variant] then
+					verbosef('Adding variant: ' .. variant .. ' from ' .. hostname)
+					result[variant] = {
+						server = hostname
+					}
+				end
 			end
+		else
+			premake.warn('A problem occured trying to contact %s.\n%s(%d).', hostname, result_str, result_code)
 		end
-	else
-		premake.warn('A problem occured trying to contact %s.\n%s(%d).', cache.package_hostname, result_str, result_code)
 	end
 
 	return result
@@ -198,25 +218,27 @@ function cache.aliases(name)
 		return { realname = name, aliases  = {} }
 	end
 
-	-- querie server for alias information.
-	local link = '/aliases?name=' .. http.escapeUrlParam(name)
-	local content, result_str, result_code = http.get(cache.package_hostname .. link)
-	if content then
-		local alias_tbl = JSON:decode(content)
-		return {
-			realname = alias_tbl['RealName'],
-			aliases  = alias_tbl['Aliases'],
-		}
-	else
-		return {
-			realname = name,
-			aliases  = {}
-		}
+	-- querie servers for alias information.
+	for _, hostname in ipairs(cache.get_servers()) do
+		local link = '/aliases?name=' .. http.escapeUrlParam(name)
+		local content, result_str, result_code = http.get(hostname .. link)
+		if content then
+			local alias_tbl = JSON:decode(content)
+			return {
+				realname = alias_tbl['RealName'],
+				aliases  = alias_tbl['Aliases'],
+			}
+		end
 	end
+
+	return {
+		realname = name,
+		aliases  = {}
+	}
 end
 
 
-function cache.download(name, version, variant)
+function cache.download(hostname, name, version, variant)
 	-- first see if we can find the package locally.
 	for i, folder in pairs(cache.folders) do
 		local location = _package_location(folder, name, version, variant)
@@ -233,14 +255,19 @@ function cache.download(name, version, variant)
 		return location
 	end
 
+	-- if we don't have a host name, we can't download it.
+	if not hostname then
+		premake.error("Package '" .. name .. "/" .. version .. "' not found on any server.")
+	end
+
 	-- calculate standard file_url.
 	local destination = location .. '.zip'
 	local file        = http.escapeUrlParam(name) .. '/' .. http.escapeUrlParam(version) .. '/' .. http.escapeUrlParam(variant) .. '.zip'
-	local file_url    = cache.package_hostname .. '/' .. file
+	local file_url    = hostname .. '/' .. file
 
 	-- get link information from server.
 	local link_url = '/link?name=' .. http.escapeUrlParam(name) .. '&version=' .. http.escapeUrlParam(version) .. '&variant=' .. http.escapeUrlParam(variant)
-	local content, result_str, result_code = http.get(cache.package_hostname .. link_url)
+	local content, result_str, result_code = http.get(hostname .. link_url)
 	if content then
 		local info_tbl = JSON:decode(content)
 		if info_tbl.url then
@@ -273,7 +300,6 @@ function cache.download(name, version, variant)
 	verbosef(' UNZIP   : %s', destination)
 	zip.extract(destination, location)
 	os.remove(destination)
-
 	return location
 end
 

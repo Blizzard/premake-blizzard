@@ -175,6 +175,7 @@
 		local pkg = packageman_setup(name, nil, {noarch = variant})
 		wks.package_cache[name] = pkg
 
+		variant.loaded   = true
 		variant.package  = pkg
 		variant.location = _SCRIPT_DIR
 		return pkg
