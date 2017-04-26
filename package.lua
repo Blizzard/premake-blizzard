@@ -142,7 +142,7 @@ function package:loadvariant(variant)
 		end
 
 		-- on mac does it contain a framework directory?
-		if os.get() == 'macosx' then
+		if os.target() == 'macosx' then
 			local directory_fw = path.join(directory, 'framework')
 			if os.isdir(directory_fw) then
 				verbosef(' FRAMEWORK ' .. directory_fw)

@@ -11,9 +11,9 @@ newoption {
 
 
 if not _OPTIONS['compiler'] then
-	if os.get() == 'linux' then
+	if os.target() == 'linux' then
 		_OPTIONS['compiler'] = 'gcc44'
-	elseif os.get() == 'windows' then
+	elseif os.target() == 'windows' then
 		_OPTIONS['compiler'] = 'vc2010'
 	else
 		_OPTIONS['compiler'] = 'clang'
@@ -22,7 +22,7 @@ end
 
 
 function _build_os(ctx)
-	local var = ctx.system or premake.action.current().os or os.get()
+	local var = ctx.system or premake.action.current().targetos or os.target()
 
 	if var == 'windows' then
 		var = "win32"
@@ -51,9 +51,9 @@ function _build_compiler(ctx)
 
 	if _OPTIONS['compiler'] then
 		return _OPTIONS['compiler']
-	elseif os.get() == 'linux' then
+	elseif os.target() == 'linux' then
 		return "gcc44"
-	elseif os.get() == 'macosx' then
+	elseif os.target() == 'macosx' then
 		return "clang"
 	end
 
@@ -132,7 +132,7 @@ end
 
 
 function _make_executable(directory_bin)
-	if os.get() == "linux" or os.get() == 'macosx' then
+	if os.host() == "linux" or os.host() == 'macosx' then
 		for num, file in pairs(os.matchfiles(path.join(directory_bin, '*'))) do
 			os.execute("chmod +x " .. file)
 		end
@@ -203,9 +203,9 @@ end
 
 
 function _get_so_searchstring(val)
-	if os.get() == 'windows' then
+	if os.target() == 'windows' then
 		return path.join(val, "*.dll")
-	elseif os.get() == 'linux' then
+	elseif os.target() == 'linux' then
 		return path.join(val, "*.so*")
 	else
 		return path.join(val, "*.dylib")
@@ -215,9 +215,9 @@ end
 
 function _get_lib_files(dir)
 	if type(dir) == 'string' then
-		if os.get() == 'windows' then
+		if os.target() == 'windows' then
 			return os.matchfiles(path.join(dir, '*.lib'))
-		elseif os.get() == 'linux' then
+		elseif os.target() == 'linux' then
 			return table.join(os.matchfiles(path.join(dir, 'lib*.a')), os.matchfiles(path.join(dir, 'lib*.so*')))
 		else
 			return table.join(os.matchfiles(path.join(dir, 'lib*.a')), os.matchfiles(path.join(dir, 'lib*.dylib*')))
@@ -235,7 +235,7 @@ end
 
 
 function _get_fw_folders(dir)
-	if os.get() == 'macosx' then
+	if os.target() == 'macosx' then
 		local pattern = path.join(dir, '*.framework')
 		return os.matchdirs(pattern)
 	else
