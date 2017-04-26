@@ -117,7 +117,7 @@ end
 
 
 local function getpackage(ctx, name)
-	local p = ctx.workspace.package_cache[name]
+	local p = ctx.workspace.package_cache[name:lower()]
 	if not p then
 		error("Package '" .. name .. "' was not imported, but the project '" .. ctx.project.name .. "' has a dependency on it.")
 	end

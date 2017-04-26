@@ -166,14 +166,14 @@
 -- Manually create a package
 ---
 	local function packageman_createpackage(wks, name)
-		local p = wks.package_cache[name]
+		local p = wks.package_cache[name:lower()]
 		if p then
 			error("Package '" .. name .. "' already exists in the solution.")
 		end
 
 		local variant = {}
 		local pkg = packageman_setup(name, nil, {noarch = variant})
-		wks.package_cache[name] = pkg
+		wks.package_cache[name:lower()] = pkg
 
 		variant.loaded   = true
 		variant.package  = pkg
@@ -306,14 +306,14 @@
 			local realname    = alias_table.realname
 			local aliases     = alias_table.aliases
 
-			if not wks.package_cache[realname] then
+			if not wks.package_cache[realname:lower()] then
 				local pkg = packageman_importpackage(realname, version)
 				init_table[realname] = pkg;
 
-				wks.package_cache[realname] = pkg
+				wks.package_cache[realname:lower()] = pkg
 				for _, alias in ipairs(aliases) do
 					verbosef("ALIAS: '%s' aliased to '%s'.", realname, alias)
-					wks.package_cache[alias] = pkg
+					wks.package_cache[alias:lower()] = pkg
 				end
 			end
 		end
@@ -338,8 +338,8 @@
 
 		-- import packages.
 		for name, filter in pairs(table) do
-			if not import_filter[name] then
-				import_filter[name] = filter
+			if not import_filter[name:lower()] then
+				import_filter[name:lower()] = filter
 			end
 		end
 	end
@@ -349,8 +349,8 @@
 --- Gets the default import filter
 ---
 	local function default_import_filter(name)
-		if import_filter[name] then
-			return import_filter[name]
+		if import_filter[name:lower()] then
+			return import_filter[name:lower()]
 		end
 		return nil
 	end
@@ -361,7 +361,7 @@
 	local function packageman_resolvepackages(ctx)
 
 		local function getpackage(wks, name)
-			local p = wks.package_cache[name]
+			local p = wks.package_cache[name:lower()]
 			if not p then
 				local prjname = iif(ctx.project, ctx.project.name, ctx.name)
 				error("Package '" .. name .. "' was not imported, but the project '" .. prjname .. "' has a dependency on it.")
@@ -518,7 +518,7 @@
 		end
 
 		local wks = premake.api.scope.workspace
-		local p = wks.package_cache[name]
+		local p = wks.package_cache[name:lower()]
 		if not p then
 			error("Package was not imported; use 'import { ['" .. name .. "'] = 'version' }'.")
 		end
@@ -534,7 +534,7 @@
 			error("No workspace in scope.", 3)
 		end
 		local wks = premake.api.scope.workspace
-		local p = wks.package_cache[name]
+		local p = wks.package_cache[name:lower()]
 		return (p ~= nil)
 	end
 
