@@ -60,8 +60,8 @@
 		kind = 'list:string'
 	}
 
-	premake.api.deprecateField("use_exposed", 'And will be remove in 5.0.37.', nil)
-	premake.api.deprecateField("use_private", 'And will be remove in 5.0.37.', nil)
+	premake.api.deprecateField("use_exposed", 'It will be remove in 5.0.37.', function() end)
+	premake.api.deprecateField("use_private", 'It will be remove in 5.0.37.', function() end)
 
 
 --
