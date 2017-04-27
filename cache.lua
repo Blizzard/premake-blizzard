@@ -12,8 +12,6 @@ cache.package_servers   = {
 	'http://***REMOVED***'
 }
 
-local JSON = assert(loadfile 'json.lua')()
-
 newoption {
 	trigger = 'no-http',
 	description = 'Disable http queries to package server.'
@@ -111,7 +109,7 @@ function cache.get_package_v2_folder(name, version)
 		local link_url = '/api/v1/link/' .. http.escapeUrlParam(name) .. '/' .. http.escapeUrlParam(version)
 		local content, result_str, result_code = http.get(hostname .. link_url)
 		if content then
-			local info_tbl = JSON:decode(content)
+			local info_tbl = json.decode(content)
 			if info_tbl.url then
 
 				if type(info_tbl.state) == "string" and info_tbl.state:lower() ~= 'active' then
@@ -192,7 +190,7 @@ function cache.get_variants(name, version)
 		local content, result_str, result_code = http.get(hostname .. file)
 		if content then
 			-- load content as json object.
-			local variant_tbl = JSON:decode(content)
+			local variant_tbl = json.decode(content)
 
 			for i, variant in pairs(variant_tbl) do
 				variant = path.getbasename(variant)
@@ -223,7 +221,7 @@ function cache.aliases(name)
 		local link = '/aliases?name=' .. http.escapeUrlParam(name)
 		local content, result_str, result_code = http.get(hostname .. link)
 		if content then
-			local alias_tbl = JSON:decode(content)
+			local alias_tbl = json.decode(content)
 			return {
 				realname = alias_tbl['RealName'],
 				aliases  = alias_tbl['Aliases'],
@@ -269,7 +267,7 @@ function cache.download(hostname, name, version, variant)
 	local link_url = '/link?name=' .. http.escapeUrlParam(name) .. '&version=' .. http.escapeUrlParam(version) .. '&variant=' .. http.escapeUrlParam(variant)
 	local content, result_str, result_code = http.get(hostname .. link_url)
 	if content then
-		local info_tbl = JSON:decode(content)
+		local info_tbl = json.decode(content)
 		if info_tbl.url then
 			file_url = info_tbl.url
 		end

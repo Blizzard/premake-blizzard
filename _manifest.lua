@@ -9,12 +9,10 @@ return {
 	'package.lua',
 	'packageman.lua',
 	'cache.lua',
-	'consoles.lua',
 	'context.lua',
 	'prebake.lua',
 	'unity.lua',
 	'vpaths.lua',
-	'json.lua',
 	'visualsvn.lua',
 	'export.lua',
 }

@@ -23,12 +23,10 @@
 		include('package.lua')
 		include('packageman.lua')
 		include('cache.lua')
-		include('consoles.lua')
 		include('context.lua')
 		include('prebake.lua')
 		include('unity.lua')
 		include('vpaths.lua')
-		include('json.lua')
 		include('visualsvn.lua')
 		include('export.lua')
 	end
