@@ -60,6 +60,9 @@
 		kind = 'list:string'
 	}
 
+	premake.api.deprecateField("use_exposed", 'And will be remove in 5.0.37.', nil)
+	premake.api.deprecateField("use_private", 'And will be remove in 5.0.37.', nil)
+
 
 --
 -- packageman methods.
@@ -220,6 +223,7 @@
 		pkg.variants.noarch.includes = meta.includedirs
 		pkg.variants.noarch.links    = meta.links
 		pkg.variants.noarch.defines  = meta.defines
+		pkg.variants.noarch.bindirs  = meta.bindirs
 		pkg.variants.noarch.location = dir
 		pkg.variants.noarch.script   = filename
 
