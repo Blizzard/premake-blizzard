@@ -58,8 +58,18 @@ local function _package_location(...)
 end
 
 
+local function _get_version()
+	return _PREMAKE_VERSION .. " (" .. _PREMAKE_COMMIT .. ")"
+end
+
+
 local function _get_user()
-	return os.getenv('USERNAME') or os.getenv('LOGNAME') or 'UNKNOWN'
+	return os.getenv('USERNAME') or os.getenv('LOGNAME') or os.getenv('USER') or '<unknown>'
+end
+
+
+local function _get_computer()
+	return os.getenv('COMPUTERNAME') or os.getenv('HOSTNAME') or '<unknown>'
 end
 
 
@@ -67,7 +77,7 @@ local function _get_workspace()
 	if premake.api and premake.api.scope and premake.api.scope.workspace then
 		return premake.api.scope.workspace.name
 	end
-	return 'unknown'
+	return '<unknown>'
 end
 
 
@@ -126,8 +136,9 @@ function cache.get_package_v2_folder(name, version)
 				local result_str, response_code = http.download(info_tbl.url, destination,
 				{
 					headers  = {
-						'X-Premake-Version: '   .. _PREMAKE_VERSION,
+						'X-Premake-Version: '   .. _get_version(),
 						'X-Premake-User: '      .. _get_user(),
+						"X-Premake-Machine: "   .. _get_computer(),
 						'X-Premake-Workspace: ' .. _get_workspace()
 					},
 					progress = iif(_OPTIONS.verbose, http.reportProgress, nil)
@@ -283,8 +294,9 @@ function cache.download(hostname, name, version, variant)
 	local result_str, response_code = http.download(file_url, destination,
 	{
 		headers  = {
-			'X-Premake-Version: '   .. _PREMAKE_VERSION,
+			'X-Premake-Version: '   .. _get_version(),
 			'X-Premake-User: '      .. _get_user(),
+			"X-Premake-Machine: "   .. _get_computer(),
 			'X-Premake-Workspace: ' .. _get_workspace()
 		},
 		progress = iif(_OPTIONS.verbose, http.reportProgress, nil)
@@ -306,12 +318,12 @@ end
 
 premake.override(premake.main, "preBake", function (base)
 	if http and not _OPTIONS['no-http'] then
-		local version = _PREMAKE_VERSION .. " (" .. _PREMAKE_COMMIT .. ")"
-		local url  = "http://***REMOVED***/api/v1/telemetry?app=premake&version=" .. http.escapeUrlParam(version)
+		local url  = "http://***REMOVED***/api/v1/telemetry?app=premake&version=" .. http.escapeUrlParam(_get_version())
 		local data = {
 			"Content-Type: application/json",
 			"Accept: application/json",
 			"X-Premake-User: "      .. _get_user(),
+			"X-Premake-Machine: "   .. _get_computer(),
 			"X-Premake-Workspace: " .. _get_workspace(),
 			"X-Premake-Platform: "  .. os.host(),
 			"X-Premake-WorkDir: "   .. _WORKING_DIR,
