@@ -64,12 +64,12 @@ end
 
 
 local function _get_user()
-	return os.getenv('USERNAME') or os.getenv('LOGNAME') or os.getenv('USER') or '<unknown>'
+	return telemetry.getusername() or os.getenv('USERNAME') or os.getenv('LOGNAME') or '<unknown>'
 end
 
 
 local function _get_computer()
-	return os.getenv('COMPUTERNAME') or os.getenv('HOSTNAME') or '<unknown>'
+	return telemetry.gethostname() or os.getenv('COMPUTERNAME') or os.getenv('HOSTNAME') or '<unknown>'
 end
 
 
