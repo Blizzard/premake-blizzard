@@ -306,8 +306,11 @@ end
 
 premake.override(premake.main, "preBake", function (base)
 	if http and not _OPTIONS['no-http'] then
-		local url  = "http://***REMOVED***/api/v1/telemetry?app=premake&version=" .. http.escapeUrlParam(_PREMAKE_VERSION)
+		local version = _PREMAKE_VERSION .. " (" .. _PREMAKE_COMMIT .. ")"
+		local url  = "http://***REMOVED***/api/v1/telemetry?app=premake&version=" .. http.escapeUrlParam(version)
 		local data = {
+			"Content-Type: application/json",
+			"Accept: application/json",
 			"X-Premake-User: "      .. _get_user(),
 			"X-Premake-Workspace: " .. _get_workspace(),
 			"X-Premake-Platform: "  .. os.host(),
