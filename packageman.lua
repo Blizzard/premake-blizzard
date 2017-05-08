@@ -60,9 +60,6 @@
 		kind = 'list:string'
 	}
 
-	premake.api.deprecateField("use_exposed", 'It will be remove in 5.0.37.', function() end)
-	premake.api.deprecateField("use_private", 'It will be remove in 5.0.37.', function() end)
-
 
 --
 -- packageman methods.
