@@ -51,9 +51,9 @@ function _build_compiler(ctx)
 
 	if _OPTIONS['compiler'] then
 		return _OPTIONS['compiler']
-	elseif os.target() == 'linux' then
+	elseif os.istarget('linux') then
 		return "gcc44"
-	elseif os.target() == 'macosx' then
+	elseif os.istarget('macosx') then
 		return "clang"
 	end
 
@@ -132,9 +132,9 @@ end
 
 
 function _make_executable(directory_bin)
-	if os.host() == "linux" or os.host() == 'macosx' then
+	if os.ishost('linux') or os.ishost('macosx') then
 		for num, file in pairs(os.matchfiles(path.join(directory_bin, '*'))) do
-			os.execute("chmod +x " .. file)
+			os.execute("chmod +x \"" .. file .. "\"")
 		end
 	end
 end
@@ -203,9 +203,9 @@ end
 
 
 function _get_so_searchstring(val)
-	if os.target() == 'windows' then
+	if os.istarget('windows') then
 		return path.join(val, "*.dll")
-	elseif os.target() == 'linux' then
+	elseif os.istarget('linux') then
 		return path.join(val, "*.so*")
 	else
 		return path.join(val, "*.dylib")
@@ -215,9 +215,9 @@ end
 
 function _get_lib_files(dir)
 	if type(dir) == 'string' then
-		if os.target() == 'windows' then
+		if os.istarget('windows') then
 			return os.matchfiles(path.join(dir, '*.lib'))
-		elseif os.target() == 'linux' then
+		elseif os.istarget('linux') then
 			return table.join(os.matchfiles(path.join(dir, 'lib*.a')), os.matchfiles(path.join(dir, 'lib*.so*')))
 		else
 			return table.join(os.matchfiles(path.join(dir, 'lib*.a')), os.matchfiles(path.join(dir, 'lib*.dylib*')))
@@ -235,7 +235,7 @@ end
 
 
 function _get_fw_folders(dir)
-	if os.target() == 'macosx' then
+	if os.istarget('macosx') then
 		local pattern = path.join(dir, '*.framework')
 		return os.matchdirs(pattern)
 	else
