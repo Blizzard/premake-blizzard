@@ -54,7 +54,12 @@ end
 
 local function _package_location(...)
 	local location = path.join(...)
-	return path.normalize(location)
+
+	location = path.normalize(location)
+	location = location:gsub('%s+', '_')
+	location = location:gsub('%(', '_')
+	location = location:gsub('%)', '_')
+	return location
 end
 
 
