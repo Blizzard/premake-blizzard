@@ -43,17 +43,23 @@
 		local keys         = prj.cached_vpath_keys
 		local vpaths       = prj.cached_vpaths
 		local wildcards    = prj.cached_wildcards
+		local exacts       = prj.cached_exacts
 
 		if not vpaths then
-			vpaths = {}
-			keys = {}
+			vpaths    = {}
+			keys      = {}
 			wildcards = {}
+			exacts    = {}
 
 			-- flatten vpaths.
 			for _, v in ipairs(prj.vpaths) do
 				for replacement, patterns in pairs(v) do
 					for _, pattern in ipairs(patterns) do
-						vpaths[pattern] = replacement
+						if pattern:find("*", 1, true) == nil then
+							exacts[pattern] = replacement
+						else
+							vpaths[pattern] = replacement
+						end
 					end
 				end
 			end
@@ -66,63 +72,70 @@
 
 			-- cache wildcard results, path.wildcards is expensive!!!
 			for index, pattern in ipairs(keys) do
-				wildcards[index] = path.wildcards(pattern)
+				wildcards[index] = '^' .. path.wildcards(pattern) .. '$'
 			end
 
 			-- store result.
 			prj.cached_vpath_keys = keys
 			prj.cached_vpaths     = vpaths
 			prj.cached_wildcards  = wildcards
+			prj.cached_exacts     = exacts
 		end
 
-		-- enumerate vpaths.
+		local function replace(pattern, abspath, replacement)
+			-- Trim out the part of the name that matched the pattern; what's
+			-- left is the part that gets appended to the replacement to make
+			-- the virtual path. So a pattern like "src/**.h" matching the
+			-- file src/include/hello.h, I want to trim out the src/ part,
+			-- leaving include/hello.h.
+
+			-- Find out where the wildcard appears in the match. If there is
+			-- no wildcard, the match includes the entire pattern
+
+			local i = pattern:find("*", 1, true) or (pattern:len() + 1)
+
+			-- Trim, taking care to keep the actual file name intact.
+
+			local leaf
+			if i < max then
+				leaf = abspath:sub(i)
+			else
+				leaf = fname
+			end
+
+			if leaf:startswith("/") then
+				leaf = leaf:sub(2)
+			end
+
+			-- check for (and remove) stars in the replacement pattern.
+			-- If there are none, then trim all path info from the leaf
+			-- and use just the filename in the replacement (stars should
+			-- really only appear at the end; I'm cheating here)
+
+			local stem = ""
+			if replacement:len() > 0 then
+				stem, stars = replacement:gsub("%*", "")
+				if stars == 0 then
+					leaf = path.getname(leaf)
+				end
+			else
+				leaf = path.getname(leaf)
+			end
+
+			return path.join(stem, leaf)
+		end
+
+		-- find exact matches.
+		local replacement = exacts[abspath]
+		if (replacement ~= nil) then
+			return replace(abspath, abspath, replacement)
+		end
+
+		-- enumerate wildcards matches.
 		for index, pattern in ipairs(keys) do
 			local i = abspath:find(wildcards[index])
 			if i == 1 then
-
-				-- Trim out the part of the name that matched the pattern; what's
-				-- left is the part that gets appended to the replacement to make
-				-- the virtual path. So a pattern like "src/**.h" matching the
-				-- file src/include/hello.h, I want to trim out the src/ part,
-				-- leaving include/hello.h.
-
-				-- Find out where the wildcard appears in the match. If there is
-				-- no wildcard, the match includes the entire pattern
-
-				i = pattern:find("*", 1, true) or (pattern:len() + 1)
-
-				-- Trim, taking care to keep the actual file name intact.
-
-				local leaf
-				if i < max then
-					leaf = abspath:sub(i)
-				else
-					leaf = fname
-				end
-
-				if leaf:startswith("/") then
-					leaf = leaf:sub(2)
-				end
-
-				-- check for (and remove) stars in the replacement pattern.
-				-- If there are none, then trim all path info from the leaf
-				-- and use just the filename in the replacement (stars should
-				-- really only appear at the end; I'm cheating here)
-
-				local replacement = vpaths[pattern]
-
-				local stem = ""
-				if replacement:len() > 0 then
-					stem, stars = replacement:gsub("%*", "")
-					if stars == 0 then
-						leaf = path.getname(leaf)
-					end
-				else
-					leaf = path.getname(leaf)
-				end
-
-				vpath = path.join(stem, leaf)
-				return vpath
+				return replace(pattern, abspath, vpaths[pattern])
 			end
 		end
 
