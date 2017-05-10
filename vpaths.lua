@@ -12,6 +12,11 @@
 --
 
 	function bnet.getvpath(prj, abspath)
+		-- if the vpaths table is empty, return the original filename.
+		if next(prj.vpaths) == nil then
+			return abspath
+		end
+
 		-- If there is no match, the result is the original filename
 		local vpath = abspath
 
