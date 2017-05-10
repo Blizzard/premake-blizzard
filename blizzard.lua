@@ -2,22 +2,13 @@
 -- Battle.net package management extension
 -- Copyright (c) 2014-2016 Blizzard Entertainment
 ---
+	local p = premake
 
-	if not premake.modules.blizzard then
-		premake.modules.blizzard = {}
-		local blizzard = premake.modules.blizzard
+	if not p.modules.blizzard then
+		p.modules.blizzard = {}
+		local blizzard = p.modules.blizzard
 
 		verbosef('Loading blizzard module...')
-
---		if http and not _OPTIONS['no-http'] then
---			local content, result_str, result_code = http.get('http://***REMOVED***/premakeversion')
---			if content then
---				local runningVersion = '"' .. _PREMAKE_VERSION .. '"'
---				if content ~= runningVersion then
---					premake.warn("Version %s of premake is the latest available, you are running %s.", content, runningVersion)
---				end
---			end
---		end
 
 		include('util.lua')
 		include('package.lua')
@@ -29,6 +20,20 @@
 		include('vpaths.lua')
 		include('visualsvn.lua')
 		include('export.lua')
+
+		-- provide overrides here.
+		p.api.addAllowed('system', {'centos6', 'centos7', 'ubuntu'})
+
+		p.override(os, "getSystemTags", function (base, name)
+			local tags =
+			{
+				["centos6"] = { "centos6", "linux", "posix" },
+				["centos7"] = { "centos7", "linux", "posix" },
+				["ubuntu"]  = { "ubuntu",  "linux", "posix" },
+			}
+			return tags[name] or base(name)
+		end)
+
 	end
 
-	return premake.modules.blizzard
+	return p.modules.blizzard
