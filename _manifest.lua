@@ -4,15 +4,12 @@
 ---
 
 return {
+	'_preload.lua',
 	'blizzard.lua',
-	'util.lua',
-	'package.lua',
-	'packageman.lua',
-	'cache.lua',
-	'context.lua',
-	'prebake.lua',
-	'unity.lua',
-	'vpaths.lua',
-	'visualsvn.lua',
 	'export.lua',
+	'prebake.lua',
+	'telemetry.lua',
+	'unity.lua',
+	'visualsvn.lua',
+	'vpaths.lua',
 }

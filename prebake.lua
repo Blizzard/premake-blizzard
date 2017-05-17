@@ -2,17 +2,18 @@
 -- Battle.net package management extension
 -- Copyright (c) 2014-2016 Blizzard Entertainment
 ---
+local p = premake
 
-premake.api.register {
+p.api.register {
 		name = 'prebakefiles',
 		scope = 'project',
 		kind = 'function'
 	}
 
-premake.api.alias('prebakefiles', 'preBakeFiles')
+p.api.alias('prebakefiles', 'preBakeFiles')
 
 
-premake.override(premake.oven, 'bakeFiles', function(base, prj)
+p.override(p.oven, 'bakeFiles', function(base, prj)
 	if prj.prebakefiles and type(prj.prebakefiles) == 'function' then
 		prj.prebakefiles(prj)
 	end

@@ -10,16 +10,12 @@
 
 		verbosef('Loading blizzard module...')
 
-		include('util.lua')
-		include('package.lua')
-		include('packageman.lua')
-		include('cache.lua')
-		include('context.lua')
 		include('prebake.lua')
 		include('unity.lua')
 		include('vpaths.lua')
 		include('visualsvn.lua')
 		include('export.lua')
+		include('telemetry.lua')
 
 		-- provide overrides here.
 		p.api.addAllowed('system', {'centos6', 'centos7', 'ubuntu'})

@@ -6,6 +6,18 @@
 local p = premake
 local findUses
 
+premake.api.register {
+	name = 'use_exposed',
+	scope = 'config',
+	kind = 'list:string'
+}
+
+premake.api.register {
+	name = 'use_private',
+	scope = 'config',
+	kind = 'list:string'
+}
+
 p.exportRule    = p.container.newClass("exportRule",    p.rule,    { "config" })
 p.exportProject = p.container.newClass("exportProject", p.project, { "config" })
 
