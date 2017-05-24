@@ -322,8 +322,17 @@ end
 -- execute some telemetry...
 
 premake.override(premake.main, "preBake", function (base)
-	if http and not _OPTIONS['no-http'] then
-		local url  = "http://***REMOVED***/api/v1/telemetry?app=premake&version=" .. http.escapeUrlParam(_get_version())
+	if http then
+		local url = "http://***REMOVED***/api/v1/telemetry"
+
+		-- if it's semver, then add entry into 'official' channel.
+		if premake.isSemVer(_PREMAKE_VERSION) then
+			url = url .. "?app=premake&version=" .. http.escapeUrlParam(_PREMAKE_VERSION)
+		else
+			-- otherwise add it to the 'test' channel.
+			url = url .. "?app=premake-test&version=" .. http.escapeUrlParam(_get_version())
+		end
+
 		local data = {
 			"Content-Type: application/json",
 			"Accept: application/json",
