@@ -3,15 +3,13 @@
 -- Copyright (c) 2014-2016 Blizzard Entertainment
 ---
 
-	bnet = bnet or {}
-
 --
 -- Given a source file path, return a corresponding virtual path based on
 -- the vpath entries in the project. If no matching vpath entry is found,
 -- the original path is returned.
 --
 
-	function bnet.getvpath(prj, abspath)
+	local function blizzard_getvpath(prj, abspath)
 		-- if the vpaths table is empty, return the original filename.
 		if next(prj.vpaths) == nil then
 			return abspath
@@ -147,5 +145,5 @@
 -- register the override.
 --
 	premake.override(premake.project, "getvpath", function (base, prj, abspath)
-		return bnet.getvpath(prj, abspath)
+		return blizzard_getvpath(prj, abspath)
 	end)
