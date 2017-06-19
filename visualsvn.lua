@@ -2,6 +2,7 @@
 -- Battle.net package management extension
 -- Copyright (c) 2014-2016 Blizzard Entertainment
 ---
+	require('vstudio')
 
 	local vstudio = premake.vstudio
 	local sln2005  = vstudio.sln2005
