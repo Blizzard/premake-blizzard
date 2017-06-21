@@ -7,6 +7,7 @@ return {
 	'_preload.lua',
 	'blizzard.lua',
 	'export.lua',
+	'installer.lua',
 	'prebake.lua',
 	'telemetry.lua',
 	'unity.lua',

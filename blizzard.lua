@@ -10,12 +10,13 @@
 
 		verbosef('Loading blizzard module...')
 
-		include('prebake.lua')
-		include('unity.lua')
-		include('vpaths.lua')
-		include('visualsvn.lua')
 		include('export.lua')
+		include('installer.lua')
+		include('prebake.lua')
 		include('telemetry.lua')
+		include('unity.lua')
+		include('visualsvn.lua')
+		include('vpaths.lua')
 
 		-- Add additional systems and it's tags.
 		p.api.addAllowed('system', {'centos6', 'centos7', 'ubuntu'})
