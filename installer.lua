@@ -4,6 +4,8 @@
 ---
 
 local p = premake
+require ("vstudio")
+
 local vstudio = p.vstudio
 local project = p.project
 
@@ -33,7 +35,7 @@ local project = p.project
 ---
 
 	p.override(vstudio, "projectfile", function(oldfn, prj)
-		if if project.isinstaller(prj) then
+		if project.isinstaller(prj) then
 			return p.filename(prj, ".vdproj")
 		end
 		return oldfn(prj)
