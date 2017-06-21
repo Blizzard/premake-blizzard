@@ -30,8 +30,8 @@
 			return tags[name] or base(name)
 		end)
 
-		-- SC2/Heroes and some package need the Unicode flag for a while longer.
-		p.api.addAllowed('flags', {'Unicode'})
+		-- SC2/Heroes and some package need the Unicode and MacOSXBundle flag for a while longer.
+		p.api.addAllowed('flags', {'Unicode', 'MacOSXBundle'})
 
 		p.api.deprecateValue("flags", "Unicode", 'Use `characterset "Unicode"` instead',
 			function(value)
@@ -39,6 +39,15 @@
 			end,
 			function(value)
 				characterset "Default"
+			end
+		)
+
+		p.api.deprecateValue("flags", "MacOSXBundle", 'Use `sharedlibtype "OSXBundle"` instead',
+			function(value)
+				sharedlibtype "OSXBundle"
+			end,
+			function(value)
+				sharedlibtype "Default"
 			end
 		)
 
