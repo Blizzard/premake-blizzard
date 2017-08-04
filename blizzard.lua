@@ -21,15 +21,13 @@
 		-- Add additional systems and it's tags.
 		p.api.addAllowed('system', {'centos6', 'centos7', 'ubuntu'})
 
-		p.override(os, "getSystemTags", function (base, name)
-			local tags =
-			{
-				["centos6"] = { "centos6", "linux", "posix" },
-				["centos7"] = { "centos7", "linux", "posix" },
-				["ubuntu"]  = { "ubuntu",  "linux", "posix" },
-			}
-			return tags[name] or base(name)
-		end)
+		-- override linux,macosx, windows and add tags for centos6,7 and ubuntu.
+		os.systemTags["linux"]    = { "linux",             "posix", "desktop" }
+		os.systemTags["macosx"]   = { "macosx",  "darwin", "posix", "desktop" }
+		os.systemTags["windows"]  = { "windows", "win32"          , "desktop" }
+		os.systemTags["centos6"]  = { "centos6", "linux",  "posix", "desktop" }
+		os.systemTags["centos7"]  = { "centos7", "linux",  "posix", "desktop" }
+		os.systemTags["ubuntu"]   = { "ubuntu",  "linux",  "posix", "desktop" }
 
 		-- SC2/Heroes and some package need the Unicode and MacOSXBundle flag for a while longer.
 		p.api.addAllowed('flags', {'Unicode', 'MacOSXBundle'})
